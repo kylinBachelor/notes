@@ -65,4 +65,89 @@ public class TestCase {
 // 例子中将student对象转换为String对象，获取student的名字。
 ```
 
-4. flatMap 将多个stream合并为一个Stream。惰性求值
+4. flatMap 将多个stream合并为一个Stream。惰性求值,调用Stream.of的静态方法将两个list转换为Stream，再通过flatMap将两个流合并为一个。
+```java
+public class TestCase {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>(3);
+        students.add(new Student("路飞", 22, 175));
+        students.add(new Student("红发", 40, 180));
+        students.add(new Student("白胡子", 50, 185));
+        List<Student> studentList = Stream.of(students,
+                asList(new Student("艾斯", 25, 183),
+                        new Student("雷利", 48, 176)))
+                .flatMap(students1 -> students1.stream()).collect(Collectors.toList());
+        System.out.println(studentList);
+    }
+}
+//输出结果
+//[Student{name='路飞', age=22, stature=175, specialities=null}, 
+//Student{name='红发', age=40, stature=180, specialities=null}, 
+//Student{name='白胡子', age=50, stature=185, specialities=null}, 
+//Student{name='艾斯', age=25, stature=183, specialities=null},
+//Student{name='雷利', age=48, stature=176, specialities=null}]
+```
+
+
+5. max和min
+	* max、min接收一个Comparator（例子中使用java8自带的静态函数，只需要传进需要比较值即可。）并且返回一个Optional对象，该对象是java8新增的类，专门为了防止null引发的空指针异常。可以使用max.isPresent()判断是否有值；可以使用max.orElse(new Student())，当值为null时就使用给定值；也可以使用max.orElseGet(() -> new Student());这需要传入一个Supplier的lambda表达式。
+```java
+public class TestCase {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>(3);
+        students.add(new Student("路飞", 22, 175));
+        students.add(new Student("红发", 40, 180));
+        students.add(new Student("白胡子", 50, 185));
+        Optional<Student> max = students.stream()
+            .max(Comparator.comparing(stu -> stu.getAge()));
+        Optional<Student> min = students.stream()
+            .min(Comparator.comparing(stu -> stu.getAge()));
+        //判断是否有值
+        if (max.isPresent()) {
+            System.out.println(max.get());
+        }
+        if (min.isPresent()) {
+            System.out.println(min.get());
+        }
+    }
+}
+//输出结果
+//Student{name='白胡子', age=50, stature=185, specialities=null}
+//Student{name='路飞', age=22, stature=175, specialities=null}
+```
+
+6. count 统计功能，一般都是结合filter使用，因为先筛选出我们需要的再统计即可。及早求值
+```java
+public class TestCase {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>(3);
+        students.add(new Student("路飞", 22, 175));
+        students.add(new Student("红发", 40, 180));
+        students.add(new Student("白胡子", 50, 185));
+        long count = students.stream().filter(s1 -> s1.getAge() < 45).count();
+        System.out.println("年龄小于45岁的人数是：" + count);
+    }
+}
+//输出结果
+//年龄小于45岁的人数是：2
+```
+
+7. reduce
+	* reduce操作可以实现从一组值中生成一个值。在上述例子中用到的count(),max(),min()方法因为常用而被纳入标准库中。事实上，这些方法都是reduce操作。及早求值
+	 ```java
+	 public class TestCase {
+	     public static void main(String[] args) {
+	         Integer reduce = Stream.of(1, 2, 3, 4).reduce(0, (acc, x) -> acc+ x);
+	         System.out.println(reduce);
+	     }
+	 }
+	 //输出结果
+	 //10
+	```
+	* reduce接收了一个初始值为0的累加器，依次取出值与累加器相加，最后累加器的值就是最终的结果。
+
+## 高级集合类及收集器
+1. 转换成值
+2. 转换成块
+3. 数据分组
+4. 字符串拼接
