@@ -508,4 +508,88 @@ public class ThradScopeTest{
 5. 自定义scope 3个步骤，实现Scope接口，将实现类注册到spring容器，使用自定义的sope
 
 # 依赖注入之手动注入
-
+## 依赖对象的初始化方式
+### 1. 通过构造器设置依赖对象
+### 2. 通过set方法设置依赖对象
+## spring依赖注入
+&emsp;&emsp;spring中依赖注入主要分为手动注入和自动注入，手动注入需要我们明确配置需要注入的对象，spring也是通过两种方式注入依赖的：构造函数的方式和set属性的方式。
+### 1.spring通过构造器注入
+构造器的参数就是被依赖的对象，构造器注入又分为三种注入方式：  
+* 根据构造器参数索引注入
+* 根据构造器参数类型注入
+* 根据构造器参数名称注入
+#### 1.根据构造器参数索引注入
+##### 用法
+```xml
+<bean id="" class="">
+  <constructor-arg index="0" value="上海"></constructor-arg>
+  <constructor-arg index="1" value="沈阳"></constructor-arg>
+  <constructor-arg index="2" value="武汉"></constructor-arg>
+</bean>
+```
+```text
+constructor-arg 用户指定构造器的参数
+index:构造器参数的位置
+value:构造器参数的值，value只能用来给简单的参数设置值，value对应的属性类型只能为byte,int,long,float,double,boolean,Byte,Long,Float,Double,枚举,spring容器内部注入的时候会将value的值转换为对应的类型。
+```
+##### 优缺点
+参数位置的注入对参数顺序有很强的依赖性，若构造函数的参数位置被人调整过，会导致注入出错。  
+不过通常情况下，不建议去代码中修改构造函数，如果需要新增参数的，可以新增一个构造函数来实现，这算是一个扩展，不会影响目前已有的功能。
+#### 2.根据构造器参数类型注入
+```xml
+<bean id="" class="">
+  <constructor-arg type="参数类型" value="参数值"></constructor-arg>
+  <constructor-arg type="参数类型" value="参数值"></constructor-arg>
+  <constructor-arg type="参数类型" value="参数值"></constructor-arg>
+</bean>
+```
+```text
+constructor-arg:用户指定构造器的参数
+type:构造器参数的完整类型，如：java.lang.String,int,double
+value:构造器参数的值，value只能用来给简单的类型设置 值
+```
+#### 优缺点
+&emsp;&emsp;实际上按照参数位置或者按照参数的类型注入，都有一个问题，很难通过bean的配置文件，知道这个参数是对应构造器中的哪一个属性，代码的可读性不好
+### 3.根据构造器参数名称注入
+```xml
+<bean id="" class="">
+  <constructor-arg name="参数类型" value="参数值"></constructor-arg>
+  <constructor-arg name="参数类型" value="参数值"></constructor-arg>
+  <constructor-arg name="参数类型" value="参数值"></constructor-arg>
+</bean>
+```
+```text
+constructor-arg:用户指定构造器的参数
+name:构造参数名称
+value:构造器参数的值，value只能用来给简单的类型设置 值
+```
+#### 关于方法参数名称问题
+&emsp;&emsp;Java通过反射的方式可以获取到方法的参数名称，不过源码中的参数经过编译之后会变成.class对象，通常情况下源码变成class文件之后，参数的真实名称会丢失，参数的名称会变成arg0,arg1,arg2....这样的，和实际参数名称不一样了，如果需要将源码中的参数名称保留在编译之后的class文件中，需要用到命令：javac -parameters java源码，但是我们难以保证编译代码的时候，操作人员一定会带上-parameters参数，所以方法的参数可能在class文件中会丢失，导致反射获取到的参数名称和实际参数名称不符。  
+&emsp;&emsp;参数名称可能不稳定的问题，spring提供了解决方案，通过ConstructorProperties注解来定义参数的名称，将这个注解加载构造方法上面。如下：
+```java
+@ConstructorProperties({"第一个参数名称", "第二个参数的名称",..."第n个参数的名称"})
+public 类名(String p1, String p2...,参数n) {}
+```
+### setter注入
+&emsp;&emsp;通常情况下我们的类都是标准的javabean,javabean类特点：  
+* 属性都是private访问级别的;
+* 属性通常情况下通过一组setter(修改器)和getter(访问器)方法来访问;
+* setter方法，以set开头后跟首字母大写的属性名，如：setUserName,简单属性一般只有一个方法参数，方法返回值一般为void;
+* getter方法，以get开头后跟首字母大写的属性名，如：getUserName,对于Boolean类型一般以is开头，后跟首字母大写的属性名，如isOk;  
+spring对符合Javabean特点的类，提供了setter方式的注入，会调用对应属性setter方法将被依赖的对象注入进去;
+#### 用法
+```xml
+<bean id="" class="">
+  <property name="属性名称" value="属性值"></property>
+  <property name="属性名称" value="属性值"></property>
+  <property name="属性名称" value="属性值"></property>
+  <property name="属性名称" value="属性值"></property>
+</bean>
+```
+```text
+property: 用于对属性的值进行配置，可以有多个
+name: 属性的名称
+value: 属性的值
+```
+#### 优缺点
+&emsp;&emsp;
