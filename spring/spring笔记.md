@@ -592,4 +592,32 @@ name: 属性的名称
 value: 属性的值
 ```
 #### 优缺点
-&emsp;&emsp;
+&emsp;&emsp;setter注入相对于构造函数注入要灵活一些，构造函数需要指定对应构造函数中所有参数的值，而setter注入的方式没有这种限制，不需要对所有属性都要进行注入，可以按需进行注入。  
+&emsp;&emsp;上面介绍的都是注入普通类型的对象，都是通过value 属性来设置需要注入的对象的值的，value属性是string类型的，spring容器内部自动会将value的值转换为对象的实际类型。  
+**如果我们依赖的对象是容器中的其它bean对象的时候，需要用到下面的方式进行注入。**
+### 注入容器中的bean
+#### 注入容器中的bean有两种写法：
+* ref属性方式
+* 内置bean方式
+#### ref属性方式
+* 构造器方式，将value替换为ref
+```xml
+<constructor-arg ref="需要注入的bean的名称"/>
+```
+* setter方式，将value替换为ref
+```xml
+<property name="属性名称" ref="需要注入的bean名称"/>
+```
+#### 内置bean方式
+* 构造器方式
+```xml
+<constructor-arg>
+  <bean class=""/>
+</constructor-arg> 
+```
+* setter方式
+```xml
+<property name="属性名称">
+  <bean class=""
+</property>
+```
