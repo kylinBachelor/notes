@@ -1,0 +1,45 @@
+#+TITLE: MYSQL操作JSON数据
+#+AUTHOR: CONGPEITONG
+* JSON数组查询
+** 加入有一个json数组字段(json_data)的某一条数据为：
+#+begin_src mysql
+[
+  {"key": "key1", "hint": "", "name": "马福祥", "type": "1", "format": "", "option": "", "mandatory": "1"},
+  {"key": "key2", "hint": "", "name": "方文豪", "type": "2", "mandatory": ""},
+  {"key": "key3", "hint": "", "name": "李家庆", "type": "1", "mandatory": ""}
+]
+#+end_src
+查询json数组条件的方法如下，通过 *JSON_CONTAINS* 函数，获取数组中name值为“马福祥”的结果集
+#+begin_src mysql
+
+SELECT * FROM TABLE WHERE JSON_CONTAINS(json_data, JSON_OBJECT('name','马福祥'))
+
+#+end_src
+
+* JSON类型数据的查询
+** 加入有两条json类型（json_data)的某一条数据为：
+#+begin_src mysql
+{'name':'许海林'，'sex':'男','age':'24'}
+{'name': '李玉', 'sex':'男','age':'23}
+#+end_src
+可通过如下两种办法对数据进行查询
+#+begin_src mysql
+SELECT * FROM TABLE WHERE json_data -> '$.name'='许海林';
+
+SELECT * FROM TABLE WHERE JSON_EXTRACT(json_data,'$.name')='许海林';
+#+end_src
+* JSON操作相关的一些基本函数
+| 分类     | 函数               | 描述                                       |
+|----------+--------------------+--------------------------------------------|
+| 创建json | json_array         | 创建json数组                               |
+|          | json_object        | 创建json对象                               |
+|          | json_quote         | 将json转化成json字符串类型                 |
+| 查询json | json_contains      | 判断是否包含某个json值                     |
+|          | json_contains_path | 判断某个路径下是否包含某个json值           |
+|          | json_extract       | 提取json值                                 |
+|          | column->path       | json_extract的简写方法，MYSQL5.7.9开始支持 |
+|          | column->>path      | json_unquote(column->path)的简洁写法       |
+|          | json_keys          | 提取json中的键值为json数组                 |
+|          | json_search        | 按给定字符串关键字搜索json，返还匹配的路径 |
+|          |                    |                                            |
+|          |                    |                                            |

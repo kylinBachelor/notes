@@ -1,0 +1,22 @@
+#+TITLE: emacs 常用快捷键
+#+AUTHOR: CONGPEITONG
+#+EMAIL: congpeitong2022@163.com
+#+OPTIONS: H3 num:nil toc:nil \n:nil ::t |:t^:nil -:nil f:t *:t <:t
+* 定位命令
+#+CAPTION: 定位命令
+| 命令       | 说明                         |
+|------------+------------------------------|
+| ctrl+space | 选中                         |
+| ctrl+p     | 向上                         |
+| ctrl+n     | 向下                         |
+| ctrl+f     | 向前                         |
+| ctrl+b     | 向后                         |
+| alt+w      | 将当前选中的文本复制到缓冲区 |
+| ctrl+y     | 粘贴                         |
+| ctrl+k     | 剪切当前位置到行末           |
+| ctrl+d     | 相当于delete键               |
+| M-a        | 定位到一行的开头             |
+| M-e        | 定位到一行的结尾             |
+| C-M-a      | 定位到函数头部               |
+| C-M-a      | 定位到函数尾部               |
+| C-M-h      | 选中整个函数                       |

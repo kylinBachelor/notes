@@ -1,0 +1,6 @@
+#+title: MingW常见的问题
+
+* git status 中文显示乱码问题
+#+begin_src shell
+git config --global core.quotepath false
+#+end_src

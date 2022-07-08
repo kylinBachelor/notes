@@ -1,0 +1,280 @@
+#+TITLE: 设计模式--结构型模式
+#+AUTHOR: CONGPEITONG
+#+STARTUP: overview top-level headlines only
+* 适配器模式
+** 适配器模式定义
+将两个不兼容的类纠合在一起使用，属于结构型模式，需要有Adaptee(被适配者)和Adaptor(适配器)两个身份
+** 使用原因
+我们经常碰到要将两个没有关系的类组合在一起使用，第一解决方案是：修改各自类的接口，但是如果我们没有源代码，
+或者，我们不愿意为了一个应用而修改各自的接口，可以考虑适配器模式了。
+** 使用方式
+1. 使用Adapter,在这两个接口之间创建一个混合接口（混血儿）。
+2. 实现Adapter方式有两种，组合（composition）和继承（inheritance）
+3. 示例
+   假如我们要打两种桩，方形桩 和 圆形桩
+   #+begin_src java
+      public class SquareePeg {
+        public void insert(String str) {
+          System.out.println("SquarePeg insert():" + str);
+        }
+      }
+     public class RoundPeg {
+       public void insertIntohole(String msg) {
+          System.out.println("RoudPeg insertIntoHole():" + msg);
+       }
+     }
+   #+end_src
+   现在有一个应用，需要既打方形桩又打圆形桩。那么我们需要将这两个没有关系的类综合应用。假如RoundPeg我们没有源代码，或者说我们不想修改源代码，那么我们使用
+   Adapter来实现这个应用：
+   #+begin_src java
+     public class PegAdapter extend SquarePeg {
+       private RoundPeg roundPeg;
+       public PegAdapter(RoundPeg peg) {
+         this.roundPeg = peg;
+       }
+       public void insert(String str) {
+         roundPeg.insertIntoHole(str);
+       }
+     }
+   #+end_src
+   在上面代码中，RoundPeg属于Adaptee,是被适配者，PegAdapter是Adapter,将Adaptee(被适配者RoundPeg)和Target(目标SquarePeg)进行适配，实际上
+   这是将组合方法和继承方法综合运用。
+
+   PegAdapter首先继承SquarePeg,然后使用new的组合生成对象，生成RoundPeg的对象roundPeg,再重载父类insert方法。从这里，你也了解使用new生成对象和使用extends继承
+   生成的对象不同，前者无需对原来的类修改，甚至不需要知道其内部结构和源代码。
+
+   如果你有些Java使用的经验，已经发现，这种模式经常使用。
+
+   进一步使用
+
+   上面的PegAdapter是继承了SquarePeg,如果我们需要两边继承，即继承SquarePeg又继承RoundPeg,因为Java中不允许多继承，但是我们可以实现（implements）两个接口（interface）
+   #+begin_src java
+     public interface IRoundPeg {
+       public void insertIntoHole(String msg);
+     }
+
+     public interface ISquarePeg {
+       public void insert(String str);
+     }
+
+     // 下面是新的RoundPeg和ISquarePeg,除了实现接口这一区别，和上面的没什么区别
+     public class SquarePeg implements ISquarePeg {
+       public void insert(String str) {
+         System.out.println("SquarePeg insert():" + str);
+       }
+     }
+     public class RoundPeg implements IRoundPeg {
+       public void insertIntoHole(String msg) {
+         System.out.println("RoundPeg insertIntoHole():" + msg);
+       }
+     }
+
+     // 下面是新的PegAdapter, 叫做two-way adapter:
+     public class PegAdapter implements IRoundPeg,ISquarePeg {
+       private RoundPeg roundPeg;
+       private SquarePeg squarePeg;
+       // 构造方法
+       public PegAdapter(RoundPeg peg) {
+         this.roundPeg = peg;
+       }
+       public void insert(Strng str) {
+         roundPeg.insertIntoHole(str)
+       }
+     }
+   #+end_src
+   还有一种叫Pluggable Adapters,可以动态的获取几个adapters中的一个。使用Reflection技术，可以动态的发现类中的Public方法
+* 桥接模式
+* 装饰模式
+* 组合模式
+** composite模式定义：
+将对象以树形结构组织起来，以达成部分到整体的层次结构，使得客户端对单个对象和组合对象的使用具有一致性。
+
+composite比较容易理解，想到composite就应该想到树形结构图，组合体内这些对象都有共同的接口，当组合体一个对象的方法被调用执行时，
+composite将遍历（Iterator)整个树形结构，寻找同样包含这个方法的对象并实现调用执行。可以用牵一动百来形容。
+
+所以composite模式使用到Iterator模式，和Chain of Responsibility模式类似。
+** composite好处：
+1. 使客户端调用简单，客户端可以一致的使用组合结构或其中单个对象，用户就不必关系自己处理的时单个对象还是整个组合结构。这就简化了客户端代码。
+2. 更容易再组合体内加入对象部件，客户端不必因为加入了新的对象部件而更改代码。
+** 使用方式
+首先定义一个接口或抽象类，这是设计模式通用方式了，其它设计模式对接口内部定义限制不多，Composite却有个规定，那就是要在接口内部定义一个用户
+访问和管理Composite组合体的对象们（或称作Component）。
+
+下面代码时以抽象类定义，一般尽量用接口inteface,
+#+begin_src java
+  public abstract class Equipment {
+    private String name;
+    //实际价格
+    public  abstract double netPrice();
+    // 折扣价格
+    public abstract double disCountPrice();
+    // 增加部件方法
+    public boolean add(Equipment equipment) {
+      return false;
+    }
+    // 删除部件方法
+    public boolean remove(Equipment equipment) {
+      return false;
+    }
+    // 注意这里，这里就提供一种用于访问组合体类的部件方法
+    public Iterator iter() { return null; }
+    public Equipment(final Strring name) { this.name = name}
+  }
+#+end_src
+抽象类Equipment就是component定义，代表着组合体类的对象们，Equipment中定义几个共同的方法。
+#+begin_src java
+  public class Disk extends Equipment {
+    public Disk(String name) { super(name);}
+    // 定义Disk实价为1
+    public double netPrice() {return 1;}
+    // 定义了disk折扣价为0.5对折
+    public double discountPrice() {
+      return 0.5;
+    }
+  }
+#+end_src
+Disk是组合体内的一个对象，或称一个部件，这个部件是个单独元素(primitive).
+
+还有一种可能是，一个部件也是一个组合体，就是说这个部件下面还有 儿子 ，这是树形结构中通常的情况，一个比较容易理解。
+
+现在我们先定义这个组合体：
+
+#+begin_src java
+  abstract class CompositeEquipment extends Equipment
+  {
+      private int i=0;
+      // 定义一个Vector用来存放 儿子。
+      private Lsit equipment=new ArrayList();
+      public CompositeEquipment(String name) { super(name); }
+      public boolean add(Equipment equipment) {
+          this.equipment.add(equipment);
+          return true;
+      }
+      public double netPrice()
+      {
+          double netPrice=0.;
+          Iterator iter=equipment.iterator();
+          for(iter.hasNext())
+              netPrice+=((Equipment)iter.next()).netPrice();
+          return netPrice;
+      }
+      public double discountPrice()
+      {
+          double discountPrice=0.;
+          Iterator iter=equipment.iterator();
+          for(iter.hasNext())
+              discountPrice+=((Equipment)iter.next()).discountPrice();
+          return discountPrice;
+      }
+  }
+  // 注意这里，这里就提供用于访问自己组合体内的部件方法。
+  // 上面disk之所以没有，是因为Disk是个单独(primitive)的元素
+  public Iterator iter()
+  {
+      return equipment.iterator() ;
+      {
+          // 重载Iterator方法
+          public boolean hasNext() { return i<equipment.size(); }
+          // 重载Iterator方法
+          public Object next()
+          {
+              if(hasNext())
+                  return equipment.elementAt(i++);
+              else
+                  throw new NoSuchElementException();
+          }
+      }
+#+end_src
+上面CompositeEquipment继承了Equipment，同时为自己里面的对象提供了外部访问的方法，重载了Iterator,Iterator是Java的Collection的一个接口，
+是Iterator模式的实现。
+
+composite是个很巧妙体现智慧的模式，在实际应用中，如果碰到树形结构，我们就可以尝试是否可以使用这个模式。
+
+以论坛为例，一个版(forum)中有很多帖子(message),这些帖子有原始帖，有对原始帖的回应贴，是个典型的树形结构，那么当然可以使用CompositeEquipment。
+它和messages的关系图。
+
+* 外观模式
+外观，总管，Manager
+** Facade模式的定义
+为子系统中的一组接口提供一个一致的界面
+* 享元模式
+* 代理模式（PROXY）
+** 前言
+理解并使用设计模式，能够培养我们良好的面向对象变成习惯，同时在实际应用中，可以如鱼得水，享受游刃有余的乐趣。
+
+代理模式是比较有用途的一种模式，而且变种较多，应用场合覆盖到整个系统的大结构，PROXY是代理的意思，我们也许有
+代理服务器等概念，代理概念可以解释为：从出发点到目的地之间有一道中间层，意为代理。
+** 设计模式中定义
+为其它对象提供一种代理以控制对整个对象的访问。
+** 使用代理原因
+1. 授权机制
+   不同级别的用户对同一对象拥有不同的访问权力，如Jive论坛系统中，就使用Proxy进行授权机制控制，访问论坛有两种人：注册用户
+   和游客（未注册用户），Jive中就通过类似ForumProxy这样的代理来控制这两种用户对论坛的访问权限。
+2. 某个客户端不能直接操作到某个对象，但是又必须和那个对象有所互动。
+
+   举两个例：
+   + 如果那个对象是一个很大的图片，需要花费很长时间才能显示出来，那么当这个图片包含在文档中时，使用编辑器或者浏览器打开这个文档，
+     打开文档必须很迅速不能，等待大图片处理完成。这时需要做个图片Proxy来代替真正的图片。
+   + 如果那个对象在Internet的某个远程服务器上，直接操作这个对象因为网络速度原因可能比较慢，那我们可以先用proxy来代替那个对象。
+
+   总之原则是：对于开销很大的对象，只有在使用它时才创建，这个原则可以为我们节省很多宝贵的Java内存，所以，有些人认为，Java耗费资源
+   内存，我以为这和编程思路也有很大的关系。
+3. 如何使用
+   以Jive论坛为例，访问论坛系统的用户有多种类型：注册普通用户，论坛管理者，系统管理者，游客.....注册普通用户才能发言论；论坛管理者可以授权它被
+   授权的论坛，系统管理者可以管理所有事务等，这些权限划分和管理是使用Proxy完成的。
+
+   Forum是Jive的核心接口，在Forum中陈列了有关论坛操作的主要行为，如论坛名称 论坛描述的获取和修改行为，帖子发表，删除，编辑等。
+
+   在ForumPermissions中定义了各种级别权限的用户：
+   #+begin_src java
+     public class ForumPermissions implements Cacheable {
+       // permission to read object
+       public static final int READ = 0;
+       // permission to administer the entire system
+       public static final int SYSTEM_ADMIN = 1;
+       // permission to administer a particular forum
+       public static final int FORUM_ADMIN = 2;
+       // permission to administer a particular user
+       public static final int USER_ADMIN = 3;
+       // permission to administer a particular group
+       public static final int GROUP_ADMIN = 4;
+       // permission to moderate threads
+       public static final int MODERATE_THREAD = 5;
+       // permission to create a new thread
+       public static final int CREATE_THREAD = 6;
+       // permission to create a new message
+       public static final int CRATE_MESSAGE = 7;
+       // permission to moderate message
+       public static final int MODERATE_MESSAGE = 8;
+       ......
+       public boolean isSystemOrForumAdmin() {
+         return (values[FORUM_ADMIN] || values[SYSTEM_ADMIN]);
+       }
+       ......
+     }
+   #+end_src
+   因此，Forum中各种权限操作是和ForumPermission定义的用户级别有关系的，作为接口Forum的实现：ForumProxy
+
+   正是将这种对应关系联系起来。比如，修改Forum的名称，只有论坛管理者或系统管理者可以修改，代码如下
+   #+begin_src java
+      public class ForumProxy implements Forum {
+        private ForumPermissions permissions;
+        private Forum forum;
+        this.authorization = authorization;
+        ForumPermissions(permissions) {
+          this.forum = forum;
+          this.authorization = authorization;
+          this.permissions = permissions;
+        }
+        .......
+        public void setName(String name) thorws UnauthorizedException,ForumAlreadyExistsException {
+          // 只有是系统或者论坛管理者才可以修改名称
+          if (permissions,isSystemorForumAdmin()) {
+            forum.setName(name)
+          } else {
+            throw new UnauthorizedException();
+          }
+        }
+     ........
+      }
+   #+end_src

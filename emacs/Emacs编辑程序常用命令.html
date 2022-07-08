@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-06-29 ���� 08:55 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Emacs编辑程序常用命令-full</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="DarkSun" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+// @license magnet:?xt=urn:btih:e95b018ef3580986a04669f1b5879592219e2a7a&dn=public-domain.txt Public Domain
+<!--/*--><![CDATA[/*><!--*/
+     function CodeHighlightOn(elem, id)
+     {
+       var target = document.getElementById(id);
+       if(null != target) {
+         elem.classList.add("code-highlighted");
+         target.classList.add("code-highlighted");
+       }
+     }
+     function CodeHighlightOff(elem, id)
+     {
+       var target = document.getElementById(id);
+       if(null != target) {
+         elem.classList.remove("code-highlighted");
+         target.classList.remove("code-highlighted");
+       }
+     }
+    /*]]>*///-->
+// @license-end
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Emacs编辑程序常用命令-full</h1>
+
+<div id="outline-container-org48d6f05" class="outline-2">
+<h2 id="org48d6f05"><span class="section-number-2">1</span> 定位命令</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Emacs提供了很多快速定位的命令,这些命令可以帮助我们快速定位到想编辑的地方.
+我们可以使用M-a直接定位到程序行的开头,使用M-e直接定位到程序行的结尾部分.
+此外,还可以使用M-f/M-b以单词为单位向前/向后跳跃,这样比用方向键一个字母一个字母的移动要快得多.
+当我们在写函数的时候,可以使用C-M-a快速跳到函数的头部,使用C-M-e跳到函数的尾部
+我们还可以使用C-M-h选中当前正在编辑的整个函数,然后使用M-w拷贝该函数,或者使用C-w剪切该函数,然后将光标移动到新的位置,按下C-y将剪切的函数移动到新的位置处.
+最后值得一提的是,emacs还能够根据grep的结果,甚至是编译的输出来定位. 但是这部分就属于比较高级的内容,暂不再此阐述
+下面的表格列出了这些常见的命令及说明
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> 定位命令</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">命令</th>
+<th scope="col" class="org-left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">M-a</td>
+<td class="org-left">定位到一行的开头</td>
+</tr>
+
+<tr>
+<td class="org-left">M-e</td>
+<td class="org-left">定位到一行的结尾</td>
+</tr>
+
+<tr>
+<td class="org-left">M-f</td>
+<td class="org-left">向前移动一个单词</td>
+</tr>
+
+<tr>
+<td class="org-left">M-b</td>
+<td class="org-left">向后移动一个单词</td>
+</tr>
+
+<tr>
+<td class="org-left">C-M-a</td>
+<td class="org-left">定位到函数头部</td>
+</tr>
+
+<tr>
+<td class="org-left">C-M-a</td>
+<td class="org-left">定位到函数结尾</td>
+</tr>
+
+<tr>
+<td class="org-left">C-M-h</td>
+<td class="org-left">选中整个函数</td>
+</tr>
+
+<tr>
+<td class="org-left">M-w</td>
+<td class="org-left">复制选中的内容</td>
+</tr>
+
+<tr>
+<td class="org-left">C-w</td>
+<td class="org-left">剪切选中的内容</td>
+</tr>
+
+<tr>
+<td class="org-left">C-y</td>
+<td class="org-left">粘贴选中的内容</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-orgb7a446e" class="outline-2">
+<h2 id="orgb7a446e"><span class="section-number-2">2</span> 格式重排</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+最常使用的格式重排命令是TAB,在编辑中按下TAB键,Emacs会自动对正在编辑的行进行重排.
+若想同时对多行进行格式重排,则可以用鼠标选中要缩进的代码块,然后按下TAB键,则Emacs对所有选中行进行重排.
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 2:</span> 格式重排</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">命令</th>
+<th scope="col" class="org-left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">TAB</td>
+<td class="org-left">对当前行或选中行进行格式重排</td>
+</tr>
+
+<tr>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org68fcdf9" class="outline-2">
+<h2 id="org68fcdf9"><span class="section-number-2">3</span> 注释</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Emacs中可以使用M-;来完成各种注释的操作.
+如果你想在编辑一行语句的后面添加上注释,可以按下M-; ,Emacs就会在该行语句后面自动添加上行注释符号,并将光标移动到待输入注释的地方.
+如果光标所在行的语句后面已经有了行注释,再按下M-;则会对该注释进行格式重排,使用这种方式可以使得多行代码的注释对齐
+若我们想临时注释掉一段代码,可以选中待注释的代码端,然后按下M-; ,Emacs会在代码段的每行代码前添加行注释符号,从而注释掉这段代码
+若我们又想启用这段注释掉的代码,只需要选中这段注释掉的代码,再按下M-; ,则Emacs会去除每行代码前的注释符号,从而启用这段代码段
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 3:</span> 注释命令</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">命令</th>
+<th scope="col" class="org-left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">M-;</td>
+<td class="org-left">添加/去除/重排注释</td>
+</tr>
+
+<tr>
+<td class="org-left">C-u M-;</td>
+<td class="org-left">删除注释</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-org63a6a3b" class="outline-2">
+<h2 id="org63a6a3b"><span class="section-number-2">4</span> 自动补全命令</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+Emacs中常用的补全命令有两个.
+一个是M-/,这个命令会将光标前的单词作为前缀,然后扫描当前buffer中所有以该前缀开头的单词作为补全的候选单词,供我们选择.
+</p>
+<pre class="example" id="org7abd79f">
+例如若当前buffer中已经包含了'unWrite unRead',则我们在输入'un'之后按下M-/后,Emacs会先帮我们补全为unWrite,再按一下M-/则回补全为unRead
+</pre>
+<p>
+另一个补全命令是C-M-i 或者 M-TAB(若在windows下会跟任务切换热键冲突,则可以先按下ESC再按下TAB代替)
+该命令会调用命令completion-at-point来对光标所在的单词进行补全,该命令会调用多种方法来尝试补全(例如从tag文件中获取补全信息,等等)
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 4:</span> 补全命令</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">命令</th>
+<th scope="col" class="org-left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">M-/</td>
+<td class="org-left">在buffer中选中指定前缀开头的单词作为补全候选</td>
+</tr>
+
+<tr>
+<td class="org-left">C-M-i / M-TAB / ESC-TAB</td>
+<td class="org-left">调用命令completion-at-point进行补全</td>
+</tr>
+
+<tr>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org84ced8d" class="outline-2">
+<h2 id="org84ced8d"><span class="section-number-2">5</span> 浏览程序大纲(hs-minor-mode)</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+Emacs提供了一种称为hs-minor-mode的模式,开启该模式之后可以使我们选择性的隐藏程序的一部分.
+开启hs-minor-mode的方法是执行M-x hs-minor-mode
+开启了hs-minor-mode之后,就可以使用C-c @ C-h来隐藏光标所在的程序块,该隐藏的程序块会消失在屏幕上取而代之的是一个三个点的省略号. 这是我们可以使用C-c @ C-s来让隐藏的程序块重新显示出来.
+若觉得记住两个命令来分别隐藏/显示程序块太麻烦,Emacs还提供了C-c @ C-c来切换隐藏/显示当前块.
+灵活使用这几个命令,可以方便的浏览程序的大纲
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 5:</span> 浏览程序大纲命令</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">命令</th>
+<th scope="col" class="org-left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">C-c @ C-h</td>
+<td class="org-left">隐藏当前块</td>
+</tr>
+
+<tr>
+<td class="org-left">C-c @ C-s</td>
+<td class="org-left">显示当前块</td>
+</tr>
+
+<tr>
+<td class="org-left">C-c @ C-c</td>
+<td class="org-left">切换隐藏/显示当前块</td>
+</tr>
+
+<tr>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org41a6847" class="outline-2">
+<h2 id="org41a6847"><span class="section-number-2">6</span> 其他工具</h2>
+<div class="outline-text-2" id="text-6">
+</div>
+<div id="outline-container-org34ce7d1" class="outline-3">
+<h3 id="org34ce7d1"><span class="section-number-3">6.1</span> imenu菜单</h3>
+<div class="outline-text-3" id="text-6-1">
+<p>
+通过执行M-x imenu-add-menubar-index可以在Emacs的菜单栏上增加一个Index菜单,通过该Index菜单可以快速定位到指定的函数,变量,宏的位置
+</p>
+</div>
+</div>
+<div id="outline-container-orgc25b026" class="outline-3">
+<h3 id="orgc25b026"><span class="section-number-3">6.2</span> which-func-mode</h3>
+<div class="outline-text-3" id="text-6-2">
+<p>
+通过执行M-x which-func-mode可以开启which-func-mode,开启该模式之后,光标所在的函数名会显示在mode-line上
+</p>
+</div>
+</div>
+<div id="outline-container-orgf0d1e9a" class="outline-3">
+<h3 id="orgf0d1e9a"><span class="section-number-3">6.3</span> show-paren-mode</h3>
+<div class="outline-text-3" id="text-6-3">
+<p>
+通过M-x show-paren-mode开启show-paren-mode后,如果光标处于开括号前或者闭括号后时,则该括号会被高亮显示
+</p>
+</div>
+</div>
+<div id="outline-container-orgb02a598" class="outline-3">
+<h3 id="orgb02a598"><span class="section-number-3">6.4</span> electric-pair-mode</h3>
+<div class="outline-text-3" id="text-6-4">
+<p>
+通过M-x electric-pair-mode开启electric-pair-mode后,若插入一个开括号,则Emacs自动补全一个闭括号,并将光标放在括号内等待输入
+</p>
+</div>
+</div>
+<div id="outline-container-orgdaea1d1" class="outline-3">
+<h3 id="orgdaea1d1"><span class="section-number-3">6.5</span> electric-layout-mode</h3>
+<div class="outline-text-3" id="text-6-5">
+<p>
+通过M-x electric-layout-mode开启electric-layout-mode后,若插入指定的表示一行语句结尾的字符时,Emacs自动帮我们回车换行.
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: DarkSun</p>
+<p class="date">Created: 2022-06-29 ���� 08:55</p>
+</div>
+</body>
+</html>

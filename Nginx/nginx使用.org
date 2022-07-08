@@ -1,0 +1,9 @@
+#+TITLE: Nginx使用
+#+AUTHOR: CONGPEITONG
+#+EMAIL: congpeitong2022@163.com
+
+* windows下nginx简单操作
+1. 启动：在nginx文件夹下cmd,输入    start nginx
+2. 重启：在nginx文件夹下cmd,输入 nginx -s reload
+2. 查看nginx进程：tasklist /fi "imagename eq nginx.exe"
+3. 关闭 ：在nginx文件夹下cmd,输入   taskkill /f/t/im nginx.exe 在nginx文件夹下cmd

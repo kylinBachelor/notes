@@ -1,0 +1,30 @@
+#+TITLE:删除排序数组中的重复项
+#+AUTHOR: CONGPEITONG
+#+EMAIL: congpeitong2022@163.com
+* 题目：
+给一个升序排列的数组nums,请你原地删除重复的元素，使每个元素只出现一次，返回删除后数组的新长度，元素的相对顺序要保持一直。
+
+不要使用额外的空间，必须在原地修改输入数组，并在使用0(1)额外空间的条件下完成。
+* 双指针解决
+使用两个指针，右指针始终往右移：
++ 如果右指针指向的值等于做指针指向的值，左指针不动。
++ 如果右指针指向的值不等于左指针指向的值，那么左指针往右移一步，然后再把右指针指向的值赋给左指针。
+#+begin_src java
+  // 双指针解决
+  public int removeDuplicates(int[] A) {
+    // 边界条件判断
+    if (A == null || A.length == 0) {
+      return 0;
+    }
+    int left = 0;
+    for (int right = 1; right < A.length; right++) {
+        // 如果左指针和右指针的值一样，说明有重复，
+        // 这个时候左指针不动，右指针继续往右移。如果他俩指向的值不一样，就把右指针指向的值往前挪
+        if (A[left] != A[right]) {
+            A[++left] = A[right];
+        }
+    }
+    return ++left;g
+  }
+
+#+end_src
