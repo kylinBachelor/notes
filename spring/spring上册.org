@@ -2927,3 +2927,214 @@ ConfigurationClassPostProcessor继续处理，直到递归完成所有bean的注
 3. 可以通过useDefaultFilters、includeFilters、excludeFilters这几个参数来配置类的过滤器，被过滤器处理之后剩下的类会被注册到容器中
 4. 指定包名的方式配置扫描范围存在隐患，包名被重命名之后，会导致扫描实现，所以一般我们在需要扫描的包中可以创建一个标记的接口或者类，作为basePackageClasses的值，通过这个来控制包的扫描范围
 5. @CompontScan注解会被ConfigurationClassPostProcessor类递归处理，最终得到所有需要注册的类。
+
+* @Import批量注册bean
+** @import出现背景
+目前为止，注解的方式批量注册bean，介绍了两种
+
+1. @Configuration结合@Bean注解的方式
+2. @ComponentScan扫描包的方式
+** 问题1
+如果需要注册的类是在第三方的jar中，那么我们如果想注册这些bean有两种方式
+1. 通过@Bean注解的方式，一个个来注册
+2. @ComponentScan的方式：默认的@ComponentScan是无能为力的，默认情况下智慧注册@Component标注的类，此时智能自定义@ComponetScan中的过滤器了
+
+这两种方式，每次有变化时，调整的代码比较多
+
+** 问题2
+通常我们的项目中有很多子模块，可能每个模块都是独立开发的，然后通过jar的方式引进来，每个模块都有各自的@Configuration @Bean标注的类，
+或者使用@ComponentScan标注的类，被 *@Configuration,@Bean,@ComponentScan标注的类，我们统称为bean配置类，配置类可以用来注册bean* 当我们
+只想使用其中几个模块的配置类，如何施行呢？
+
+@Import可以很好的解决这两个问题
+
+** @Import使用
+先看Spring对他的注释，总结下来的作用就是和xml配置的<import/>标签作用一样，允许通过它引入@Configuration标注的类，引入ImportSelector接口和
+ImportBeanDefinitionRegister接口的实现，也包括@Component注解的普通类。
+
+总的来说：@Import可以用来批量导入需要注册的各种类，如普通的类，配置类，之后完成普通类和配置类中所有bean的注册。
+
+@Import源码
+#+begin_src java
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Documented
+  public @interface Import {
+      /**
+       ,*{@link Configuration @Configuration}, {@link ImportSelector},
+       ,*{@link ImportBeanDefinitionRegistrar}, or regular component classes toimport.
+       ,*/
+      Class<?>[] value();
+  }
+#+end_src
+
+@Import可以使用在任何类型上，通常情况下，类和注解上用的比较多。
+
+value: 一个Class数组，设置需要导入的类，可以是@Configuration标注的列，可以是ImportSelector接口或者ImportBeanDefinitionRegister接口类型的，
+或者需要导入的普通组件得类。
+
+*** 使用步骤
+1. 将@Import标注在类上，设置value参数
+2. 将@Import标注的类作为AnnotationConfigApplicationContext构造参数创建AnnotationConfigApplicationContext对象
+3. 使用AnnotationConfigApplicationContext对象
+*** @Import的value常见的有五种用法
+1. value为普通的类
+2. value为@Configuration标注的类
+3. value为@CompontentScan标注的类
+4. value为ImportBeanDefinitionRegistrar接口类型
+5. value为ImportSelector接口类型
+6. value为DeferredImportSelector接口类型
+**** value为普通类
+#+begin_src java
+  public class Service1 {}
+  public class Service2 {}
+#+end_src
+总配置类：使用@Import标注
+#+begin_src java
+  import org.springframework.context.annotation.Import;
+  @Import({Service1.class, Service2.class})
+  public class MainConfig {}
+#+end_src
+@Import 中导入了两个普通类：service1和service2，这两个类会被自动注册到容器中
+**** value为@Configuration标注的配置类
+项目比较大的情况下，会按照模块独立开发，每个模块在maven中就表现为一个个的构建，然后通过坐标的方式进行引入需要的模块
+
+加入项目中有两个模块，两个模块都有各自的配置类，如下
+
+模块1配置类
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  /**
+   ,*模块1配置类
+   ,*/
+  @Configuration
+  public class ConfigModule1 {
+      @Bean
+      public String module1() {
+          return "我是模块1配置类！";
+      }
+  }
+#+end_src
+模块2配置类
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  /**
+   ,*模块2配置类
+  ,*/
+  @Configuration
+  public class ConfigModule2 {
+      @Bean
+      public String module2() {
+          return "我是模块2配置类！";
+      }
+  }
+#+end_src
+总配置类：通过@Import导入两个模块的配置类
+#+begin_src java
+  import org.springframework.context.annotation.Import;
+  @Import({ConfigModule1.class, ConfigModule2.class}) //@1
+  public class MainConfig2{}
+#+end_src
+@1导入了2个模块中的模块配置类，可以按需导入。
+**** value为@ComponentScan标注的类
+项目中分多个模块，每个模块有各自独立的包，我们在每个模块所在的包中配置一个
+@CompontentScan类，然后通过@Import来导入需要启用的模块。
+
+***** 定义模块1:
+包为：com.test.module1
+
+组件1：Module1Service1
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Module1Service1 {}
+#+end_src
+组件2：Module1Service2
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Module1Service2 {
+  }
+#+end_src
+组件扫描类：CompontentScanModule1------>负责扫描当前模块中的组件
+#+begin_src java
+  import org.springframework.context.annotation.ComponentScan;
+  import org.springframework.stereotype.Component;
+  /**
+     模块1的主键扫描
+  ,*/
+  @ComponentScan
+  public class CompontentScanModule1 {
+  }
+#+end_src
+
+***** 定义模块2:
+包为：com.test.module2
+
+组件1：Module2Service1
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Module2Service1 {}
+#+end_src
+组件2：Module2Service2
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Module2Service2 {
+  }
+#+end_src
+组件扫描类：CompontentScanModule1------>负责扫描当前模块中的组件
+#+begin_src java
+  import org.springframework.context.annotation.ComponentScan;
+  import org.springframework.stereotype.Component;
+  /**
+     模块1的主键扫描
+  ,*/
+  @ComponentScan
+  public class CompontentScanModule2 {
+  }
+#+end_src
+
+***** 总配置类：通过@Import导入每个模块中的组件扫描类
+#+begin_src java
+  import org.springframework.context.annotation.Import;
+  /**
+   ,*通过@Import导入多个@CompontentScan标注的配置类
+  ,*/
+  @Import({CompontentScanModule1.class, CompontentScanModule2.class}) //@1
+  public class MainConfig3 {
+  }
+#+end_src
+
+*** 先了解一下几个相关的接口
+**** ImportBeanDefinitionRegistrar接口
+这个接口提供了通过spring容器api的方式直接向容器中注册bean
+
+接口的完整名称：
+#+begin_src java
+  org.springframework.context.annotation.ImportBeanDefinitionRegistrar
+#+end_src
+源码：
+#+begin_src java
+  public interface ImportBeanDefinitionRegistrar {
+      default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,BeanNameGenerator importBeanNameGenerator) {
+          registerBeanDefinitions(importingClassMetadata, registry);
+      }
+      default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+      }
+  }
+#+end_src
+两个默认方法，都可以用来调用spring容器api来注册bean
+
+2个方法中主要有3个参数
+
+importingClassMetadata：AnnotationMetadata类型的，通过这个可以获取被@Import注解标注的类所有注解的信息。
+
+registry：BeanDefinitionRegistry类型，是一个接口，内部提供了注册bean的各种方法。
+
+importBeanNameGenerator：BeanNameGenerator类型，是一个接口，内部有一个方法，用来生成bean的名称。
+
+关于BeanDefinitionRegistry和BeanNameGenerator接口在来细说一下。
