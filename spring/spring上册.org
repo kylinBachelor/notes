@@ -3109,8 +3109,8 @@ value: 一个Class数组，设置需要导入的类，可以是@Configuration标
   }
 #+end_src
 
-*** 先了解一下几个相关的接口
-**** ImportBeanDefinitionRegistrar接口
+**** 先了解一下几个相关的接口
+***** ImportBeanDefinitionRegistrar接口
 这个接口提供了通过spring容器api的方式直接向容器中注册bean
 
 接口的完整名称：
@@ -3138,3 +3138,380 @@ registry：BeanDefinitionRegistry类型，是一个接口，内部提供了注�
 importBeanNameGenerator：BeanNameGenerator类型，是一个接口，内部有一个方法，用来生成bean的名称。
 
 关于BeanDefinitionRegistry和BeanNameGenerator接口在来细说一下。
+***** BeanDefinitionRegistry接口：bean定义注册器
+bean定义注册器，提供了bean注册的各种办法，来看一下源码
+#+begin_src java
+  public interface BeanDefinitionRegistry extends AliasRegistry {
+  /**
+  ,*注册一个新的bean定义
+  ,*beanName：bean的名称
+  ,*beanDefinition：bean定义信息
+  ,*/
+  void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)throws BeanDefinitionStoreException;
+  /**
+  ,*通过bean名称移除已注册的bean
+   beanName：bean名称
+  ,*/
+  void removeBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
+  /**
+  ,*通过名称获取bean的定义信息
+  ,*beanName：bean名称
+  ,*/
+  BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
+  /**
+  ,*查看beanName是否注册过
+  ,*/
+  boolean containsBeanDefinition(String beanName);
+  /**
+  ,*获取已经定义（注册）的bean名称列表
+  ,*/
+  String[] getBeanDefinitionNames();
+  /**
+  ,*返回注册器中已注册的bean数量
+  ,*/
+  int getBeanDefinitionCount();
+  /**
+  ,*确定给定的bean名称或者别名是否已在此注册表中使用
+  ,*beanName：可以是bean名称或者bean的别名
+  ,*/
+  boolean isBeanNameInUse(String beanName);
+  }
+#+end_src
+基本上所有的bean工厂都实现了这个接口，让bean工厂拥有bean注册的各种能力。
+
+上面我们用到的AnnotationConfigApplicationContext类也实现了这个接口。
+
+***** BeanNameGenerator接口：bean名称生成器
+bean名称生成器，这个接口只有一个方法，用来生成bean的名称
+#+begin_src java
+  public interface BeanNameGenerator {
+      String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry);
+  }
+#+end_src
+spring内置了三个实现
+
+DefaultBeanNameGenerator
+
+默认bean名称生成器，xml中bean未指定名称的时候，默认就会使用这个生成器，默认为：完整的类名#bean编号
+
+AnnotationBeanNameGenerator
+
+注解方式bean名称生成器，比如通过@Component(bean名称)的方式指定bean名称，如果没有通过注解方式指定名称，默认会将完整的类名作为bean名称。
+
+FullyQualifiedAnnotationBeanNameGenerator
+
+将完整的类名作为bean名称
+
+BeanDefinition接口：bean定义信息
+
+用来表示bean定义信息的接口，我们向容器中注册bean之前，会通过xml或者其他方式定义bean的各种配置信息，bean的所有配置信息都会
+被转换为一个BeanDefinition对象，然后通过容器中BeanDefinitionRegistry接口中的方法，将BeanDefinition注册到spring容器中，
+完成bean的注册操作
+
+这个接口有很多实现类，后面说
+
+**** value为ImportBeanDefinitionRegistrar接口类型
+***** 用法
+1. 定义ImportBeanDefinitionRegistrar接口实现类，在registerBeanDefinitions方法中使用registry来注册bean
+2. 使用@Import来导入步骤1中定义的类
+3. 使用步骤2中@Import标注的类作为AnnotationConfigApplicationContext构造参数创建spring容器
+4. 使用AnnotationConfigApplicationContext操作bean
+
+Service1.java
+#+begin_src java
+  public class Service1 {}
+#+end_src
+Service2.java
+#+begin_src java
+  public class Service2 {
+      private Service1 service1;
+      public Service1 getService1() {
+          return service1;
+      }
+      public void setService1(Service1 service1) {
+          this.service1 = service1;
+      }
+      @Override
+      public String toString() {
+        return "Service2{service1=" + service1 + "}";
+      }
+  }
+#+end_src
+来个类实现ImportBeanDefinitionRegistrar接口，然后在里面实现上面两个类的注册，如下：
+
+MyImportBeanDefinitionRegistrar.java
+#+begin_src java
+  public class MyImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
+      @Override
+      public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+          // 定义一个bean： Service1
+          BeanDefinition service1BeanDinition = BeanDefinitionBuilder.genericBeanDefinition(Service1.class).getBeanDefinition();
+          // 注册bean
+          registry.registerBeanDefinition("service1", service1BeanDinition);
+          // 定义一个bean: Service2,通过addPropertyReference注入service1
+          BeanDefinition service2BeanDinition = BeanDefinitionBuilder.genericBeanDefinition(Service2.class).addPropertyReference("service1", "service1").getBeanDefinition();
+          // 注册bean
+          registry.registerBeanDefinition("service2", service2BeanDinition);
+      }
+  }
+#+end_src
+注意上面的registerBeanDefinition方法，内部注册了两个bean, Service1和Service2.
+
+上面使用了BeanDefinitionBuilder这个类，这是个BeanDefinition的构造器，内部提供了很多静态方法方便构造BeanDefinition对象。
+
+上面定义的2个bean，和下面xml方式效果一样
+#+begin_src xml
+  <bean id="service1" class="com.test4.Service1" />
+  <bean id="service2" class="com.test4.Service2">
+    <property name="service1" ref="service1"/>
+  </bean>
+#+end_src
+
+**** value为ImportSelector接口类型
+***** ImportSelector接口
+导入选择器，看一下源码
+#+begin_src java
+  public interface ImportSelector {
+      /**
+       ,*返回需要导入的类名的数组，可以是任何普通类，配置类（@Configuration、@Bean、@CompontentScan等标注的类）
+       ,*@importingClassMetadata：用来获取被@Import标注的类上面所有的注解信息
+       ,*/
+      String[] selectImports(AnnotationMetadata importingClassMetadata);
+  }
+#+end_src
+***** 用法（四个步骤）
+1. 定义ImportSelector接口实现类，在selectImports返回需要导入的类的名称数组
+2. 使用@Import来导入步骤1中定义的类
+3. 使用步骤2中@Import标注的类作为AnnotationConfigApplicationContext构造参数创建spring容器
+4. 使用AnnotationConfigApplicationContext操作bean
+***** 案例
+Service1.java
+#+begin_src java
+  public class Service1 {}
+#+end_src
+@Configuration标注的配置类：Module1Config
+#+begin_src java
+  @Configration
+  public class Module1Config {
+      @Bean
+      pubic String name() {
+        return "java";
+      }
+    @Bean
+    public String address() {
+      return "山东省";
+    }
+  }
+#+end_src
+上面定义了两个String类型的bean: name和address
+
+自定义一个ImportSelector，然后返回上面2个类的名称
+#+begin_src java
+  public class MyImportSelector implements ImportSelector {
+    public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+      return new String[] {
+        Service1.class.getName(),
+        Module1Config.class.getName()
+      }
+    }
+  }
+#+end_src
+@Import标注的类，导入MyImportSeletor
+#+begin_src java
+  @Import({MyImportSelector.class})
+  public class MainCofig5{}
+#+end_src
+测试用例
+#+begin_src java
+  @Test
+  public void test5() {
+      //1.通过AnnotationConfigApplicationContext创建spring容器，参数为@Import标注的类
+      AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MainConfig5.class);
+      //2.输出容器中定义的所有bean信息
+      for (String beanName : context.getBeanDefinitionNames()) {
+          System.out.println(String.format("%s->%s", beanName,
+                                           context.getBean(beanName)));
+      }
+  }
+#+end_src
+运行输出
+#+begin_src java
+  com.javacode2018.lesson001.demo24.test5.Service1-
+      >com.javacode2018.lesson001.demo24.test5.Service1@45b4c3a9
+      name->java
+      address->山东省
+#+end_src
+
+**** 牛逼案例
+***** 需求
+凡是类名中包含service的，调用他们内部任何方法，我们希望调用之后能够输出这些方法的耗时。
+***** 实现分析
+之前，我们讲过代理，此处我们就可以通过代理来实现，bean实例创建的过程中，我们可以给这些bean生成一个代理，在代理中统计方法的耗时
+1. 创建一个代理类，通过代理间接访问需要统计耗时的bean对象
+2. 拦截bean的创建，给bean实例生成代理
+***** 具体实现
+service1.java
+#+begin_src java
+@Component
+  public class Service1 {
+      public void m1() {
+          System.out.println(this.getClass() + ".m1()");
+      }
+  }
+#+end_src
+service2.java
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service2 {
+      public void m1() {
+          System.out.println(this.getClass() + ".m1()");
+      }
+  }
+#+end_src
+创建统计耗时的代理类：使用cglib来实现一个代理类，如下：
+#+begin_src java
+  import org.springframework.cglib.proxy.Enhancer;
+  import org.springframework.cglib.proxy.MethodInterceptor;
+  import org.springframework.cglib.proxy.MethodProxy;
+  import java.lang.reflect.Method;
+  public class CostTimeProxy implements MethodInterceptor {
+      //目标对象
+      private Object target;
+      public CostTimeProxy(Object target) {
+          this.target = target;
+      }
+      @Override
+      public Object intercept(Object o, Method method, Object[] objects,
+                              MethodProxy methodProxy) throws Throwable {
+          long starTime = System.nanoTime();
+          //调用被代理对象（即target）的方法，获取结果
+          Object result = method.invoke(target, objects); //@1
+          long endTime = System.nanoTime();
+          System.out.println(method + "，耗时(纳秒)：" + (endTime - starTime));
+          return result;
+      }
+      /**
+       ,*创建任意类的代理对象
+       ,*
+       ,*@param target
+       ,*@param <T>
+       ,*@return
+       ,*/
+      public static <T> T createProxy(T target) {
+          CostTimeProxy costTimeProxy = new CostTimeProxy(target);
+          Enhancer enhancer = new Enhancer();
+          enhancer.setCallback(costTimeProxy);
+          enhancer.setSuperclass(target.getClass());
+          return (T) enhancer.create();
+      }
+  }
+#+end_src
+createProxy方法可以用来给某个对象生成代理对象
+
+拦截bean实例的创建，返回代理对象
+#+begin_src java
+  org.springframework.beans.factory.config.BeanPostProcessor
+      public interface BeanPostProcessor {
+      /**
+       ,*bean初始化之前会调用的方法
+       ,*/
+      @Nullable
+      default Object postProcessBeforeInitialization(Object bean, String beanName)throws BeansException {
+          return bean;
+      }
+      /**
+       ,*bean初始化之后会调用的方法
+       ,*/
+      @Nullable
+      default Object postProcessAfterInitialization(Object bean, String beanName)throws BeansException {
+          return bean;
+      }
+  }
+#+end_src
+这个接口是bean处理器，内部有2个方法，分别在bean初始化前后会进行调用，以后讲声明周期的时候
+还会细说的，这里你只需要知道bean初始化之后会调用 postProcessAfterInitialization 方法就
+行，这个方法中我们会给bean创建一个代理对象。
+
+创建BeanPostProcessor实现类
+#+begin_src java
+  import org.springframework.beans.BeansException;
+  import org.springframework.beans.factory.config.BeanPostProcessor;
+  import org.springframework.lang.Nullable;
+  public class MethodCostTimeProxyBeanPostProcessor implements BeanPostProcessor {
+      @Nullable
+      @Override
+      public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+          if (bean.getClass().getName().toLowerCase().contains("service")) {
+              return CostTimeProxy.createProxy(bean); //@1
+          } else {
+              return bean;
+          }
+      }
+  }
+#+end_src
+@1: 使用上面创建代理类来给当前bean对象创建一个代理
+
+需要将MethodCostTimeProxyBeanPostProcessor注册到容器中才会起作用，下面我们通过@Import结合ImportSelector的方式来导入这个类，将其注册到容器中。
+
+MethodCostTimeImportSelector.java
+#+begin_src java
+  import com.javacode2018.lesson001.demo23.test4.MethodCostTimeProxyBeanPostProcessor;
+  import org.springframework.context.annotation.ImportSelector;
+  import org.springframework.core.type.AnnotationMetadata;
+  public class MethodCostTimeImportSelector implements ImportSelector {
+      @Override
+      public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+          return new String[]
+              {MethodCostTimeProxyBeanPostProcessor.class.getName()};
+      }
+  }
+#+end_src
+来一个@Import来导入MethodCostTimeImportSelector
+
+下面我们使用注解的方式，在注解上使用@Import，如下：
+#+begin_src java
+  import java.lang.annotation.ElementType;
+  import java.lang.annotation.Retention;
+  import java.lang.annotation.RetentionPolicy;
+  import java.lang.annotation.Target;
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Import(MethodCostTimeImportSelector.class)
+  public @interface EnableMethodCostTime {
+  }
+#+end_src
+
+总的配置
+#+begin_src java
+  import org.springframework.context.annotation.ComponentScan;
+  @ComponentScan
+  @EnableMethodCostTime //@1
+  public class MainConfig6 {
+  }
+#+end_src
+上面使用了@CompontentScan注解，此时会将Servce1和Service2这两个类注册到容器中。
+@1：此处使用了@EnableMethodCostTime注解，而@EnableMethodCostTime注解上使用了
+@Import(MethodCostTimeImportSelector.class)，此时MethodCostTimeImportSelector类中
+的MethodCostTimeProxyBeanPostProcessor会被注册到容器，会拦截bean的创建，创建耗时代理对象。
+
+运行输出
+#+begin_src java
+class com.javacode2018.lesson001.demo24.test6.Service1.m1()
+public void com.javacode2018.lesson001.demo24.test6.Service1.m1()，耗时(纳秒)：
+74200
+class com.javacode2018.lesson001.demo24.test6.Service2.m1()
+public void com.javacode2018.lesson001.demo24.test6.Service2.m1()，耗时(纳秒)：
+33800
+#+end_src
+太牛逼了，需求实现了。
+
+如果我们不想开启方法耗时统计，只需要将MainConfig6上的@EnableMethodCostTime去掉就可以了，用起来是不是特别爽。
+
+spring中有很多类似的注解，以@EnableXXX开头的注解，基本上都是通过上面这种方式实现的，如：
+#+begin_src java
+  @EnableAspectJAutoProxy
+  @EnableCaching
+  @EnableAsync
+#+end_src
+继续向下看，还有一个更牛逼的接口DeferredImportSelector。
