@@ -3515,3 +3515,234 @@ spring中有很多类似的注解，以@EnableXXX开头的注解，基本上都�
   @EnableAsync
 #+end_src
 继续向下看，还有一个更牛逼的接口DeferredImportSelector。
+
+*** DeferredImportSelector接口
+spring中的核心功能@EnableAutoConfiguration就是靠着DeferredImportSelector来实现的。
+
+DeferredImportSelector是ImportSelector子接口，既然是ImportSelector子接口，素以也可以通过@Import进行导入，这个接口和ImportSelector不同地方有两点：
+1. 延迟导入
+2. 指定导入的类的处理顺序
+**** 延迟导入
+比如@Import的value包含了多个普通类、多个@Configuration标注的配置类、多个ImportSelector接
+口的实现类，多个ImportBeanDefinitionRegistrar接口的实现类，还有DeferredImportSelector接口实
+现类，此时spring处理这些被导入的类的时候，会将DeferredImportSelector类型的放在最后处理，
+会先处理其他被导入的类，其他类会按照value所在的前后顺序进行处理。
+那么我们是可以做很多事情的，比如我们可以在DeferredImportSelector导入的类中判断一下容器中是
+否已经注册了某个bean，如果没有注册过，那么再来注册。
+以后我们会讲到另外一个注解@Conditional，这个注解可以按条件来注册bean，比如可以判断某个
+bean不存在的时候才进行注册，某个类存在的时候才进行注册等等各种条件判断，通过@Conditional来
+结合DeferredImportSelector可以做很多事情。
+***** 案例
+来3个配置类，每个配置类中都通过@Bean定义一个String类型的bean,内部输出一句文字。
+
+Configuration1.java
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  @Configuration
+  public class Configuration1 {
+      @Bean
+      public String name1() {
+          System.out.println("name1");
+          return "name1";
+      }
+  }
+
+#+end_src
+Configuration2.java
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  @Configuration
+  public class Configuration2 {
+      @Bean
+      public String name2() {
+          System.out.println("name2");
+          return "name2";
+      }
+  }
+#+end_src
+Configuration3.java
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  @Configuration
+  public class Configuration3 {
+      @Bean
+      public String name3() {
+          System.out.println("name3");
+          return "name3";
+      }
+  }
+#+end_src
+来一个ImportSelector实现类，导入Configuration1
+#+begin_src java
+  import org.springframework.context.annotation.ImportSelector;
+  import org.springframework.core.type.AnnotationMetadata;
+  public class ImportSelector1 implements ImportSelector {
+      @Override
+      public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+          return new String[]{Configuration1.class.getName()};
+      }
+  }
+#+end_src
+来一个DeferredImportSelector实现类，导入Cnfiguration2
+#+begin_src java
+  import org.springframework.context.annotation.DeferredImportSelector;
+  import org.springframework.core.type.AnnotationMetadata;
+  public class DeferredImportSelector1 implements DeferredImportSelector {
+      @Override
+      public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+          return new String[]{Configuration2.class.getName()};
+      }
+  }
+
+#+end_src
+来一个总的配置类
+#+begin_src java
+  @Import({DeferredImportSelector1.class,Configuration3.class,ImportSelector1.class,})
+  public class MainConfig7 {}
+#+end_src
+注意上面的@Import中被导入类的顺序：DeferredImportSelector1->Configuration3->ImportSelector1
+
+下面来个测试用例，看一下3个配置文件中@Bean标注的方法被执行的先后顺序。
+#+begin_src java
+  @Test
+  public void test7() {
+      //1.通过AnnotationConfigApplicationContext创建spring容器，参数为@Import标注的类
+      AnnotationConfigApplicationContext context = new
+      AnnotationConfigApplicationContext(MainConfig7.class);
+  }
+#+end_src
+运行输出：
+#+begin_src java
+  name3
+  name1
+  name2
+#+end_src
+输出的结果结合一下@Import中被导入的3个类的顺序，可以看出DeferredImportSelector1是被最后处理的，其他2个是按照value中所在的先后顺序处理的。
+
+指定导入的类的处理顺序
+当@Import中有多个DeferredImportSelector接口的实现类时候，可以指定他们的顺序，指定顺序常见的两种方式
+****** 实现Ordered接口的方式
+#+begin_src java
+  org.springframework.core.Ordered
+  public interface Ordered {
+      int HIGHEST_PRECEDENCE = Integer.MIN_VALUE;
+      int LOWEST_PRECEDENCE = Integer.MAX_VALUE;
+      int getOrder();
+  }
+#+end_src
+value的值越小，优先级越高
+****** 实现Order注解的方式
+#+begin_src java
+  org.springframework.core.annotation.Order
+      @Retention(RetentionPolicy.RUNTIME)
+      @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
+      @Documented
+      public @interface Order {
+          int value() default Ordered.LOWEST_PRECEDENCE;
+      }
+#+end_src
+****** 指定导入类处理顺序案例
+来两个配置类，内部都有一个@Bean标注的方法，用来注册一个bean，方法内部输出一段文字
+
+Configuratio1.java
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  @Configuration
+  public class Configuration1 {
+      @Bean
+      public String name1() {
+          System.out.println("name1");
+          return "name1";
+      }
+  }
+#+end_src
+Configuraton2.java
+#+begin_src java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  @Configuration
+  public class Configuration2 {
+      @Bean
+      public String name2() {
+          System.out.println("name2");
+          return "name2";
+      }
+  }
+#+end_src
+来2个DeferredImportSelector实现类，分别来导入上面2个配置文件，顺便通过Ordered接口指定一下顺序
+
+DeferredImportSelector1.java
+#+begin_src java
+  import org.springframework.context.annotation.DeferredImportSelector;
+  import org.springframework.core.Ordered;
+  import org.springframework.core.type.AnnotationMetadata;
+  public class DeferredImportSelector1 implements DeferredImportSelector, Ordered
+  {
+      @Override
+      public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+          return new String[]{Configuration1.class.getName()};
+      }
+      @Override
+      public int getOrder() {
+          return 2;
+      }
+  }
+#+end_src
+DererredImportSelector2.java
+#+begin_src java
+  import com.javacode2018.lesson001.demo24.test7.Configuration2;
+  import org.springframework.context.annotation.DeferredImportSelector;
+  import org.springframework.core.Ordered;
+  import org.springframework.core.type.AnnotationMetadata;
+  public class DeferredImportSelector2 implements DeferredImportSelector, Ordered
+  {
+      @Override
+      public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+          return new String[]{Configuration2.class.getName()};
+      }
+      @Override
+      public int getOrder() {
+          return 1;
+      }
+  }
+#+end_src
+DeferredImportSelector1的order为2，DeferredImportSelector2的order为1，order值越小优先级越高。
+
+来个总的配置类，引入上面两个ImportSelector
+MainConfig8.java
+#+begin_src java
+  import org.springframework.context.annotation.Import;
+  @Import({DeferredImportSelector1.class,DeferredImportSelector2.class,})
+  public class MainConfig8 {}
+#+end_src
+测试用例
+#+begin_src java
+  @Test
+  public void test8() {
+      //1.通过AnnotationConfigApplicationContext创建spring容器，参数为@Import标注的类
+      AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MainConfig8.class);
+  }
+#+end_src
+运行输出顺序为： name2, name1
+
+结果配合order的值，按照order从小到大来处理，可以看出DeferredImportSelector2先被处理的。
+
+
+** spring源码简介
+@Import注解是被下面这个类处理的
+#+begin_src java
+  org.springframework.context.annotation.ConfigurationClassPostProcessor
+#+end_src
+前面介绍的@Configuration、@Bean、@CompontentScan、@CompontentScans都是被这个处理的，这个类是高手必经之路，建议花点时间研究研究。
+
+** 总结
+1. @Import可以用来批量导入任何普通的组件、配置类，将这些类中定义的所有bean注册到容器中
+2. @Import常见的5种用法需要掌握
+3. 掌握ImportSelector、ImportBeanDefinitionRegistrar、DeferredImportSelector的用法
+4. DeferredImportSelector接口可以实现延迟导入、按序导入的功能
+5. spring中很多以@Enable开头的都是使用@Import集合ImportSelector方式实现的
+6. BeanDefinitionRegistry接口：bean定义注册器，这个需要掌握常见的方法
