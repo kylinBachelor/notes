@@ -1,27 +1,23 @@
-# notes#### Description
+# notes
+#### Description
 主要使用org-mode来记录笔记
-
 #### Instructions
-
 1.  docker
 2.  emacs
-
     emacs的使用教程:来自[https://gitee.com/microway199/hello-emacs](https://gitee.com/microway199/hello-emacs)
-    
     emacs配置文件见：[https://gitee.com/congpeitong/emacs.d](https://gitee.com/congpeitong/emacs.d)
-    
-3.  java
 
+3.  java
     java基础笔记
-    
+
 4.  mysql
 
     mysql数据库
-    
+
 5.  planTask
 
     windows计划任务
-    
+
 6.  设计模式
     + 设计模式七大原则
     + 创建型模式
