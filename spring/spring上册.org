@@ -4486,3 +4486,629 @@ matches方法中的内容直接复制过来，判断规则不变。
 判断bean存不存在的问题，通常会使用ConfigurationCondition这个接口，阶段为：REGISTER_BEAN，这样可以确保条件判断是在bean注册阶段执行的。
 
 对springboot比较熟悉的，它里面有很多@Conditionxxx这样的注解，可以去看一下这些注解，很多都实现了ConfigurationCondition接口。
+
+* 注解实现依赖注入
++ @Autowired
++ @Resource
++ @Primary
++ @Qulifier
+** @Autowired:注入依赖对象
+*** 作用
+实现依赖注入，spring容器会对bean中的所有字段，方法进行遍历，标注有@Autowired注解的，都会进行注入
+*** 注解定义
+#+begin_src java
+  @Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.PARAMETER,
+              ElementType.FIELD, ElementType.ANNOTATION_TYPE})
+              @Retention(RetentionPolicy.RUNTIME)
+              @Documented
+              public @interface Autowired {
+                  /**
+                   ,*Declares whether the annotated dependency is required.
+                   ,*<p>Defaults to {@code true}.
+                   ,*/
+                  boolean required() default true;
+              }
+#+end_src
+可以用在构造器，方法，方法参数，字段，注解上面
+
+参数：required:标注的对象是否必须注入，可能这个对象再容器中不存在，如果为true的时候，找不到匹配
+的后选择就会报错，为false的时候，找不到也没关系。
+*** Autowire查找候选者的过程
+按类型找->通过限定符@Qualifier过滤->@Primary->@Priority->根据名称找（字段名称或者参数名称）
+
+*** 案例1：@Autowired标注在构造器上，通过构造器注入依赖对象
+Service1.java
+#+begin_src java
+  @Component
+  public class Service1 {
+  }
+#+end_src
+Service2.java
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service2 {
+      private Service1 service1;
+      public Service2() { //@1
+          System.out.println(this.getClass() + "无参构造器");
+      }
+      public Service2(Service1 service1) { //@2
+          System.out.println(this.getClass() + "有参构造器");
+          this.service1 = service1;
+      }
+      @Override
+      public String toString() { //@2
+          return "Service2{" + "service1=" + service1 + '}';
+      }
+  }
+#+end_src
+Service2中依赖于Service1，有2个构造方法
+
+@1：无参构造器
+
+@2：有参构造器，可以通过这个传入依赖的Service1
+
+@3：重写了toString方法，一会打印测试的时候方便查看
+
+总的配置文件
+#+begin_src java
+  @ComponentScan // @1
+  public class MainConfig0 {}
+#+end_src
+@1: 会自动扫描当前类所在的包，会将Service1和Service2注册到容器
+
+测试用例
+#+begin_src java
+  import com.javacode2018.lesson001.demo26.test0.MainConfig0;
+  import org.junit.Test;
+  import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+  public class InjectTest {
+      @Test
+      public void test0() {
+          AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MainConfig0.class);
+          for (String beanName : context.getBeanDefinitionNames()) {
+              System.out.println(String.format("%s->%s", beanName,context.getBean(beanName)));
+          }
+      }
+  }
+#+end_src
+main方法中启动容器，加载MainConfig0配置类，然后输出容器中所有的bean
+
+运行部分输出
+#+begin_src java
+  class com.javacode2018.lesson001.demo26.test0.Service2无参构造器
+  service1->com.javacode2018.lesson001.demo26.test0.Service1@4a94ee4
+  service2->Service2{service1=null}
+#+end_src
+输出中可以看出调用了Service2的无参构造器，service2中的service1为null
+
+通过@Autowired指定注入的构造器
+
+在Service2有参有参构造器上面加上@Autowired注解，如下：
+#+begin_src java
+  @Autowired
+  public Service2(Service1 service1) {
+      System.out.println(this.getClass() + "有参构造器");
+      this.service1 = service1;
+  }
+#+end_src
+
+再次运行test0()
+#+begin_src java
+class com.javacode2018.lesson001.demo26.test0.Service2有参构造器
+service1->com.javacode2018.lesson001.demo26.test0.Service1@4ec4f3a0
+service2-
+>Service2{service1=com.javacode2018.lesson001.demo26.test0.Service1@4ec4f3a0}
+#+end_src
+Service2有参构造器被调用了，service2中的service1有值了。
+
+
+*** 案例2：@Autowired标注在方法上，通过方法注入依赖的对象
+Service1.java
+#+begin_src java
+  @Component
+  public class Service1 {}
+#+end_src
+Service2.java
+#+begin_src java
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service2 {
+      private Service1 service1;
+      @Autowired
+      public void injectService1(Service1 service1) { //@1
+          System.out.println(this.getClass().getName() + ".injectService1()");
+          this.service1 = service1;
+      }
+      @Override
+      public String toString() {
+          return "Service2{" +
+              "service1=" + service1 +
+              '}';
+      }
+  }
+#+end_src
+@1：方法上标注了@Autowired，spring容器会调用这个方法，从容器中查找Service1类型的bean，然后注入。
+
+总的配置文件
+#+begin_src java
+  import org.springframework.context.annotation.ComponentScan;
+  @ComponentScan
+  public class MainConfig1 {}
+#+end_src
+测试用例
+#+begin_src java
+  @Test
+  public void test1() {
+      AnnotationConfigApplicationContext context = new
+          AnnotationConfigApplicationContext(MainConfig1.class);
+      for (String beanName : context.getBeanDefinitionNames()) {
+          System.out.println(String.format("%s->%s", beanName,
+                                           context.getBean(beanName)));
+      }
+  }
+#+end_src
+运行输出
+#+begin_src java
+  com.javacode2018.lesson001.demo26.test1.Service2.injectService1()
+  service1->com.javacode2018.lesson001.demo26.test1.Service1@9597028
+  service2-
+  >Service2{service1=com.javacode2018.lesson001.demo26.test1.Service1@9597028}
+#+end_src
+注入成功
+*** 案例3：@Autowired标注在setter方法上，通过setter方法注入
+上面2种通过构造器，和通过普通的一个方法注入，不是很常见，可以将@Autowired标注在set方法上
+面，来注入指定的对象
+
+Service1.java
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service1 {
+  }
+#+end_src
+Service2.java
+#+begin_src java
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service2 {
+      private Service1 service1;
+      @Autowired
+      public void setService1(Service1 service1) { //@1
+          System.out.println(this.getClass().getName() + ".setService1方法");
+          this.service1 = service1;
+      }
+      @Override
+      public String toString() {
+          return "Service2{" +
+              "service1=" + service1 +
+              '}';
+      }
+  }
+#+end_src
+@1：标准的set方法，方法上使用了 @Autowired，会通过这个方法注入Service1类型的bean对象。
+
+总的配置文件
+#+begin_src java
+  import org.springframework.context.annotation.ComponentScan;
+  @ComponentScan
+  public class MainConfig2 {
+  }
+#+end_src
+测试用例
+#+begin_src java
+  @Test
+  public void test2() {
+      AnnotationConfigApplicationContext context = new
+          AnnotationConfigApplicationContext(MainConfig2.class);
+      for (String beanName : context.getBeanDefinitionNames()) {
+          System.out.println(String.format("%s->%s", beanName,
+                                           context.getBean(beanName)));
+      }
+  }
+#+end_src
+运行输出
+#+begin_src java
+  com.javacode2018.lesson001.demo26.test2.Service2.setService1方法
+  service1->com.javacode2018.lesson001.demo26.test2.Service1@6069db50
+  service2-
+      >Service2{service1=com.javacode2018.lesson001.demo26.test2.Service1@6069db50}
+#+end_src
+*** 案例4：@Autowired标注在方法参数上
+Service1.java
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service1 {}
+#+end_src
+Service2.java
+#+begin_src java
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service2 {
+      private Service1 service1;
+      @Autowired
+      public void injectService1(Service1 service1, String name) { //@1
+          System.out.println(String.format("%s.injectService1(),{service1=%s,name=%s}", this.getClass().getName(), service1, name));
+          this.service1 = service1;
+      }
+      @Override
+      public String toString() {
+          return "Service2{" +
+              "service1=" + service1 +
+              '}';
+      }
+  }
+#+end_src
+@1：方法上标注了@Autowired，表示会将这个方法作为注入方法，这个方法有2个参数，spring查找这2个参数对应的bean，然后注入。
+
+第一个参数对应的bean是存在的，第二个是一个String类型的，我们并没有定义String类型bean，一会看看效果
+
+总配置文件
+#+begin_src java
+  @Test
+  public void test3() {
+      AnnotationConfigApplicationContext context = new
+          AnnotationConfigApplicationContext(MainConfig3.class);
+      for (String beanName : context.getBeanDefinitionNames()) {
+          System.out.println(String.format("%s->%s", beanName,
+                                           context.getBean(beanName)));
+      }
+  }
+#+end_src
+运行输出
+#+begin_src java
+org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating
+bean with name 'service2': Unsatisfied dependency expressed through method
+'injectService1' parameter 1; nested exception is
+org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying
+bean of type 'java.lang.String' available: expected at least 1 bean which
+qualifies as autowire candidate. Dependency annotations: {}
+#+end_src
+报错了，从错误信息中可以看出，通过injectService1方法注入的时候，第二个参数为String类型，spring从容器中没有找到String类型的候选bean，所以报错了。
+
+我们可以这么做多个参数的时候，方法上面的@Autowire默认对方法中所有参数起效，如果我们想对某个参数进行特定
+的配置，可以在参数上加上@Autowired，这个配置会覆盖方法上面的@Autowired配置。
+在第二个参数上面加上@Autowired，设置required为false：表示这个bean不是强制注入的，能找到就
+注入，找不到就注入一个null对象，调整一下代码，如下：
+#+begin_src java
+  @Autowired
+  public void injectService1(Service1 service1, @Autowired(required = false) String name) { //@1
+      System.out.println(String.format("%s.injectService1(),
+                                       {service1=%s,name=%s}", this.getClass().getName(), service1, name));
+                                       this.service1 = service1;
+                                       }
+#+end_src
+此时方法的第一个参数被方法上面的@Autowired约束，第二个参数受@Autowired(required = false)约束
+
+再次运行输出
+#+begin_src java
+com.javacode2018.lesson001.demo26.test3.Service2.injectService1(),
+{service1=com.javacode2018.lesson001.demo26.test3.Service1@59309333,name=null}
+service1->com.javacode2018.lesson001.demo26.test3.Service1@59309333
+service2-
+>Service2{service1=com.javacode2018.lesson001.demo26.test3.Service1@59309333}
+#+end_src
+注入成功了，service1有值，name为null
+
+*** 案例5：@Autowired用在字段上
+Service1.java
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service1 {}
+#+end_src
+Service2.java
+#+begin_src java
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service2 {}
+#+end_src
+Service3.java
+#+begin_src java
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.stereotype.Component;
+  @Component
+  public class Service3 {
+      @Autowired
+      private Service1 service1;//@1
+      @Autowired
+      private Service2 service2;//@2
+      @Override
+      public String toString() {
+          return "Service3{" +
+              "service1=" + service1 +
+              ", service2=" + service2 +
+              '}';
+      }
+  }
+#+end_src
+@1和@2：定义了2个字段，上面都标注了@Autowired，spring会去容器中按照类型查找这2种类
+型的bean，然后设置给这2个属性。
+
+来个总的配置文件
+#+begin_src java
+  import org.springframework.context.annotation.ComponentScan;
+  @ComponentScan
+  public class MainConfig4 {}
+#+end_src
+测试用例
+#+begin_src java
+  @Test
+  public void test4() {
+      AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MainConfig4.class);
+      for (String beanName : context.getBeanDefinitionNames()) {
+          System.out.println(String.format("%s->%s", beanName,
+                                           context.getBean(beanName)));
+      }
+  }
+#+end_src
+运行输出
+#+begin_src java
+service1->com.javacode2018.lesson001.demo26.test4.Service1@7e07db1f
+service2->com.javacode2018.lesson001.demo26.test4.Service2@1189dd52
+service3-
+>Service3{service1=com.javacode2018.lesson001.demo26.test4.Service1@7e07db1f,
+service2=com.javacode2018.lesson001.demo26.test4.Service2@1189dd52}
+#+end_src
+service3中标注@Autowired的2个属性都有值了，都被注入成功了。
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src
+
+#+begin_src java
+
+#+end_src

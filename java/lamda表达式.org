@@ -1,0 +1,181 @@
+#+title: lambda表达式
+#+author: congpeitong
+#+email: congpeitong2022@163.com
+
+* 方法的引用
+** 什么是方法引用
+方法引用可以理解为lambda表达式的简便写法。方法引用是用来直接访问类或者实例的已经存在的方法或构造方法（函数），它比lambda表达式更加的简洁，更高的可读性，更好的复用性。
+** 方法引用的语法
+#+begin_src java
+  类名(或者实例) :: 方法名
+#+end_src
+** 方法引用的分类
+| 方法的引用类型 | 语法                 | Lambda表达式                             |
+|----------------+----------------------+------------------------------------------|
+| 静态方法的引用 | 类名::staticMethod   | (args)->类名.staticMethod(args)          |
+| 实例方法的引用 | instance::instMethod | (args) -> instance::insMethod(args)      |
+| 对象方法的引用 | 类名::instMethod     | (instance, args)->类名::instMethod(args) |
+| 构造方法的引用 | 类名::new            | (args) -> new 类名(args)                 |
+|                |                      |                                          |
+** 静态方法引用的定义
+如果函数式接口的实现可以通过调用一个静态方法来实现，称之为静态方法的引用。
+** 静态方法引用示例
++ 无参数，无返回值
+  #+begin_src java
+    public static double getPrice() {
+        double price = 20.00;
+        System.out.println("get price:" + price);
+        return price;
+    }
+
+    public static void printPrice() {
+        System.out.println("print price:" + 15.00);
+    }
+
+    /**
+     ,* lambda表达式，静态方法引用
+     ,* 无参数，无返回值
+     ,*/
+    @Test
+    public void testNoReturnValue() {
+        /**
+         ,* 通过lambda表达式调用，其中getPrice()有返回值，因为仅仅是调用执行方法，而不把结果返回，所以这样使用正确
+         ,*
+         ,*/
+        Runnable r1 = () -> {
+            LambdaStaticMethodTest.getPrice();
+        };
+        Runnable r2 = () -> LambdaStaticMethodTest.getPrice();
+        /**
+         ,* 将r1/r2改写为静态方法引用
+         ,*/
+        Runnable r3 = LambdaStaticMethodTest::getPrice;
+        r1.run();
+        r2.run();
+        r3.run();
+
+        Runnable r4 = () -> {
+            LambdaStaticMethodTest.printPrice();
+        };
+        Runnable r5 = () -> LambdaStaticMethodTest.printPrice();
+        /**
+         ,* 将r4/r5改写为静态方法引用
+         ,*/
+        Runnable r6 = LambdaStaticMethodTest::printPrice;
+        r4.run();
+        r5.run();
+        r6.run();
+    }
+  #+end_src
++ 无参数，有返回值
+  #+begin_src java
+    /**
+     ,* lambda表达式，静态方法引用
+     ,* 无参数，有返回值
+     ,*/
+    @Test
+    public void testReturnValue() {
+        /**
+         ,* 使用java8自带的函数式接口，无参有返回值，其中lambda body体使用了静态方法：类名.静态方法名()
+         ,*/
+        Supplier<Double> s1 = () -> {
+            return LambdaStaticMethodTest.getPrice();
+        };
+        Supplier<Double> s2 = () -> LambdaStaticMethodTest.getPrice();
+        /**
+         ,* 将s1/s2改写为静态方法引用
+         ,*/
+        Supplier<Double> s3 = LambdaStaticMethodTest::getPrice;
+
+        s1.get();
+        s2.get();
+        s3.get();
+    }
+
+  #+end_src
++ 有参数，无返回值
+  #+begin_src java
+    public static void setName(String name) {
+        System.out.println("name:" + name);
+    }
+
+    public static String queryName(String name) {
+        System.out.println("name:" + name);
+        return name;
+    }
+
+    @Test
+    public void testOneArgNoRetrunValue() {
+        /**
+         ,* java.util.function.Consumer是java8自带的函数式接口，接收一个参数，无返回值
+         ,*
+         ,* 由于无返回值，调用静态方法是否有返回值都不影响，如下
+         ,*/
+        Consumer<String> c1 = (name) -> LambdaStaticMethodTest.setName(name);
+        Consumer<String> c2 = name -> LambdaStaticMethodTest.setName(name);
+        Consumer<String> c3 = (name) -> LambdaStaticMethodTest.queryName(name);
+        Consumer<String> c4 = name -> LambdaStaticMethodTest.queryName(name);
+
+        /**
+         ,* 将c1/c2/c3/c4 改写为静态方法引用
+         ,*/
+        Consumer<String> c5 = LambdaStaticMethodTest::setName;
+        Consumer<String> c6 = LambdaStaticMethodTest::queryName;
+
+        c1.accept("c1");
+        c2.accept("c2");
+        c3.accept("c3");
+        c4.accept("c4");
+        c5.accept("c5");
+        c6.accept("c6");
+    }
+
+  #+end_src
++ 有参数，有返回值
+  #+begin_src java
+    public static String queryInfo(String name, String sex) {
+        String info = "name:" + name + ",sex:" + sex;
+        System.out.println(info);
+        return info;
+    }
+
+    public static Integer length(String name) {
+        return name.length();
+    }
+
+    /**
+     ,* lambda 静态方法引用
+     ,* 有参数，有返回值
+     ,*/
+    @Test
+    public void testArgsReturnValue() {
+        /**
+         ,* java.util.function.Function 是java8自带的函数式接口，接收一个参数，有返回值
+         ,*
+         ,* lambda 函数式接口实现部分使用了静态方法：类名.方法名
+         ,*/
+        Function<String, Integer> f1 = name -> LambdaStaticMethodTest.length(name);
+        /**
+         ,* 将f1改写为静态方法引用，只需要写类名和方法名即可，简洁了很多
+         ,*/
+        Function<String, Integer> f2 = LambdaStaticMethodTest::length;
+
+        /**
+         ,* java.util.function.BinaryOperator 是java8自带的函数式接口,接收2个输入参数，有返回值
+         ,*
+         ,* lambda 函数式接口实现部分使用了静态方法：类名.方法名
+         ,*/
+        BinaryOperator<String> b1 = (s1, s2) -> LambdaStaticMethodTest.queryInfo(s1, s2);
+
+        /**
+         ,* 将b1改写为静态方法引用，只需要写类名和方法名即可，简洁了很多
+         ,*/
+        BinaryOperator<String> b2 = LambdaStaticMethodTest::queryInfo;
+
+        System.out.println(f1.apply("java"));
+        System.out.println(f2.apply("java"));
+        System.out.println(b1.apply("zhang san","男"));
+        System.out.println(b1.apply("李四","男"));
+    }
+
+  #+end_src
