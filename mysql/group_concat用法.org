@@ -1,0 +1,58 @@
+#+title: group_concat用法
+#+AUTHOR: CONGPEITONG
+#+EMAIL: congpeitong2022@163.com
+
+* 初始函数
+#+begin_src sql
+  SELECT * FROM student_exam;
+#+end_src
+结果为
+  | id | subject | student | teacher | score |
+  |  1 | 数学    | 小红    | 王老师  |    80 |
+  |  2 | 数学    | 小李    | 王老师  |    80 |
+  |  3 | 数学    | 小王    | 王老师  |    70 |
+  |  4 | 数学    | 小张    | 王老师  |    90 |
+  |  5 | 数学    | 小赵    | 王老师  |    70 |
+  |  6 | 数学    | 小孙    | 王老师  |    80 |
+  |  7 | 数学    | 小钱    | 王老师  |    90 |
+  |  8 | 数学    | 小高    | 王老师  |    70 |
+  |  9 | 数学    | 小秦    | 王老师  |    80 |
+  | 10 | 数学    | 小马    | 王老师  |    90 |
+  | 11 | 数学    | 小朱    | 王老师  |    90 |
+  | 12 | 语文    | 小高    | 李老师  |    70 |
+  | 15 | 语文    | 小秦    | 李老师  |    70 |
+  | 18 | 语文    | 小马    | 李老师  |    80 |
+  | 21 | 语文    | 小朱    | 李老师  |    90 |
+  | 24 | 语文    | 小钱    | 李老师  |    90 |
+  |    |         |         |         |       |
+
+如果我们希望按分数score进行分组，并将分组后的学生姓名打印下来，就可以用group_concat实现。执行sql：
+#+begin_src sql
+  select score,group_concat(student) from exam group by score;
+#+end_src
+执行结果为：
+| score | group_concat(student)         |
+|    70 | 小王,小赵,小高,小高,小秦      |
+|    80 | 小红,小李,小孙,小秦,小马      |
+|    90 | 小张,小钱,小马,小朱,小朱,小钱 |
+|       |                               |
+不难看出，在70分这一行有两条小高的记录，90分这一行有两条小钱和小朱的记录，如果我们需要去重，则需要给函数中加一个distinct参数：
+#+begin_src sql
+  select score,group_concat(distinct student) from exam group by score;
+#+end_src
+执行结果为：
+| score | group_concat(student)    |
+|    70 | 小王,小赵,小高,小秦      |
+|    80 | 小红,小李,小孙,小秦,小马 |
+|    90 | 小张,小钱,小马,小朱      |
+|       |                          |
+这样group_concat每行数据的结果中就没有了重复值，但是在数据中的分隔符为默认的逗号','，如果想修改默认的分隔符，只需要在上述指令中稍作修改：
+#+begin_src sql
+  select score,group_concat(distinct student separator '%') from exam group by score;
+#+end_src
+执行结果为：
+| score | group_concat(student)    |
+|    70 | 小王%小秦%小赵%小高      |
+|    80 | 小孙%小李%小秦%小红%小马 |
+|    90 | 小张%小朱%小钱%小马      |
+|       |                          |
